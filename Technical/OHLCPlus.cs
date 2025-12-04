@@ -60,20 +60,19 @@ public abstract class NotifiableObject : INotifyPropertyChanged
 
 [Editor(typeof(ATAS.Indicators.Technical.Editors.LevelSettingsEditor), typeof(ATAS.Indicators.Technical.Editors.LevelSettingsEditor))]
 public class LevelSettings : NotifiableObject
-{
-    #region Fields
+    {
+        #region Fields
 
-    private bool _enabled;
-    private CrossColor _color;
-    private bool _showPrice;
-    private LineType _lineType;
-    private int _width;
-    private LineDashStyle _lineStyle;
-    private LabelPosition _labelPosition;
+        private bool _enabled;
+        private CrossColor _color;
+        private CrossColor _textColor;
+        private bool _showPrice;
+        private LineType _lineType;
+        private int _width;
+        private LineDashStyle _lineStyle;
+        private LabelPosition _labelPosition;
 
-    #endregion
-      
-    #region Properties
+        #endregion    #region Properties
 
     [Display(ResourceType = typeof(Strings), Name = nameof(Strings.Enabled))]
     public bool Enabled 
@@ -87,6 +86,13 @@ public class LevelSettings : NotifiableObject
     {
         get => _color;
         set => SetField(ref _color, value);
+    }
+
+    [Display(ResourceType = typeof(Strings), Name = nameof(Strings.TextColor))]
+    public CrossColor TextColor 
+    {
+        get => _textColor;
+        set => SetField(ref _textColor, value);
     }
 
     [Display(ResourceType = typeof(Strings), Name = nameof(Strings.ShowPrice))]
@@ -136,6 +142,7 @@ public class LevelSettings : NotifiableObject
     (
         bool enabled = false,
         CrossColor color = default,
+        CrossColor textColor = default,
         int width = 1,
         LineDashStyle lineStyle = LineDashStyle.Solid,
         bool showPrice = true,
@@ -145,6 +152,7 @@ public class LevelSettings : NotifiableObject
     {
         Enabled = enabled;
         Color = color == default ? System.Drawing.Color.Blue.Convert() : color;
+        TextColor = textColor == default ? System.Drawing.Color.White.Convert() : textColor;
         Width = width;
         LineStyle = lineStyle;
         ShowPrice = showPrice;
@@ -1306,15 +1314,15 @@ public class OHLCPlus : Indicator
         {
             case LabelPosition.Bar:
                 var barLabelX = currentBarRightX + 5;
-                DrawTextLabel(context, level.Label, barLabelX, y, renderPen, false);
+                DrawTextLabel(context, level.Label, barLabelX, y, renderPen, false, levelSettings.TextColor);
                 break;
             case LabelPosition.Right:
                 var rightLabelX = chartWidth - 5;
-                DrawTextLabel(context, level.Label, rightLabelX, y, renderPen, true);
+                DrawTextLabel(context, level.Label, rightLabelX, y, renderPen, true, levelSettings.TextColor);
                 break;
             case LabelPosition.Left:
                 var leftLabelX = 5;
-                DrawTextLabel(context, level.Label, leftLabelX, y, renderPen, false);
+                DrawTextLabel(context, level.Label, leftLabelX, y, renderPen, false, levelSettings.TextColor);
                 break;
             case LabelPosition.None:
                 // No text label to draw
@@ -1352,10 +1360,10 @@ public class OHLCPlus : Indicator
         }
     }
 
-    private void DrawTextLabel(RenderContext context, string text, int x, int y, RenderPen pen, bool alignRight)
+    private void DrawTextLabel(RenderContext context, string text, int x, int y, RenderPen pen, bool alignRight, CrossColor? textColor = null)
     {
         var size = context.MeasureString(text, _font);
-        var textColor = ChartInfo.ColorsStore.MouseTextColor;
+        textColor ??= CrossColors.White;
         
         // Calculate rectangle position based on alignment
         var rectX = alignRight ? x - size.Width : x;
@@ -1369,7 +1377,7 @@ public class OHLCPlus : Indicator
         // Draw text
         var textRect = new Rectangle(rectX, y - size.Height / 2, size.Width, size.Height);
         var format = alignRight ? _stringRightFormat : _stringLeftFormat;
-        context.DrawString(text, _font, textColor, textRect, format);
+        context.DrawString(text, _font, textColor.Value, textRect, format);
     }
 
     private void RenderLevelGroup(RenderContext context, string prefix,
